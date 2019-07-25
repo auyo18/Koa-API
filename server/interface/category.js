@@ -26,10 +26,18 @@ router.get('/getCategory', async ctx => {
 router.post('/addCategory', async ctx => {
   const {name, slug, description, thumbnail} = ctx.request.body
 
-  if (!name || !slug) {
+  if (!name) {
     ctx.body = {
       code: -1,
-      message: '分类名或别名不能为空'
+      message: '分类名为空'
+    }
+    return
+  }
+
+  if (!slug) {
+    ctx.body = {
+      code: -1,
+      message: '分类别名为空'
     }
     return
   }
@@ -50,12 +58,7 @@ router.post('/addCategory', async ctx => {
     return
   }
   try {
-    await new Category({
-      name,
-      slug,
-      description,
-      thumbnail
-    }).save()
+    await new Category({name, slug, description, thumbnail}).save()
 
     ctx.body = {
       code: 0,

@@ -1,3 +1,3 @@
 export default {
-  dbUrl: 'mongodb://localhost:27017/julipay'
+  dbUrl: 'mongodb://localhost:27017/juli'
 }

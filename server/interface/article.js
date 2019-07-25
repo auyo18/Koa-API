@@ -8,17 +8,116 @@ const router = new Router({
   prefix: '/article'
 })
 
-router.get('/article', async ctx => {
-  const article = new Article({
-    title: '13座“万亿城市”半年报出炉，谁更敢花钱？',
-    content: '<p>13座“万亿城市”半年报出炉，谁更敢花钱？</p>>',
-    category_id: '5d3925317ec24936ecb05ebc'
-  })
-  let result = await article.save()
+router.get('/getArticleList', async ctx => {
+  const {page = 1, limit = 10, sort = -1, importance, category_id, sortName = 'updateTime', keyword, search} = ctx.query
+  let $match = {}
+  if (importance) {
+    $match.importance = parseInt(importance)
+  }
+  if (category_id) {
+    $match.category_id = ObjectId(category_id)
+  }
+  if (keyword) {
+    $match.keyword = {$regex: keyword}
+  }
+  if (search) {
+    $match.$or = [
+      {
+        title: {$regex: search}
+      },
+      {
+        content: {$regex: search}
+      },
+      {
+        keyword: {$regex: search}
+      }
+    ]
+  }
+
+  const article = await Article.aggregate([
+    {
+      $match
+    },
+    {
+      $lookup: {
+        from: 'categories',
+        localField: 'category_id',
+        foreignField: '_id',
+        as: 'category'
+      },
+    },
+    {
+      $project: {
+        title: 1,
+        content: 1,
+        author: 1,
+        thumbnail: 1,
+        description: 1,
+        keyword: 1,
+        importance: 1,
+        updateTime: 1,
+        category: {
+          _id: 1, name: 1, slug: 1, description: 1, thumbnail: 1
+        }
+      }
+    },
+    {
+      $sort: {[sortName]: parseInt(sort)}
+    },
+    {
+      $skip: (page - 1) * limit
+    },
+    {
+      $limit: limit
+    }
+  ])
+
   ctx.body = {
     code: 0,
     message: 'success',
-    data: result
+    data: article
+  }
+})
+
+// 添加文章
+router.post('/addArticle', async ctx => {
+  const {title, content, category_id, author, thumbnail, description, keyword, importance = 1} = ctx.request.body
+
+  if (!category_id) {
+    ctx.body = {
+      code: -1,
+      message: '分类为空'
+    }
+    return
+  }
+
+  if (!title) {
+    ctx.body = {
+      code: -1,
+      message: '标题为空'
+    }
+    return
+  } else {
+    if (await Article.findOne({title})) {
+      ctx.body = {
+        code: -1,
+        message: '标题已存在'
+      }
+      return
+    }
+  }
+
+  try {
+    await new Article({title, content, category_id, author, thumbnail, description, keyword, importance}).save()
+    ctx.body = {
+      code: 0,
+      message: '文章添加成功'
+    }
+  } catch (e) {
+    ctx.body = {
+      code: 1,
+      message: e.message
+    }
   }
 })
 
@@ -33,13 +132,15 @@ router.get('/detail', async ctx => {
       },
     },
     {
-      $match: {_id: ObjectId('5d392556ff709e3a488776cc')}
-    },
-    {
       $project: {
         title: 1, content: 1, updateTime: 1, category: {
           _id: 1, name: 1, slug: 1, description: 1, thumbnail: 1
         }
+      }
+    },
+    {
+      $sort: {
+        updateTime: -1
       }
     }
   ])
