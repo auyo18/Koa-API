@@ -8,8 +8,12 @@ const router = new Router({
   prefix: '/article'
 })
 
+// 获取文章列表
 router.get('/getArticleList', async ctx => {
-  const {page = 1, limit = 10, sort = -1, importance, category_id, sortName = 'updateTime', keyword, search} = ctx.query
+  let {page = 1, limit = 10, sort = -1, importance, category_id, sortName = 'updateTime', keyword, search} = ctx.query
+  if (limit > 10) {
+    limit = 10
+  }
   let $match = {}
   if (importance) {
     $match.importance = parseInt(importance)
@@ -22,16 +26,22 @@ router.get('/getArticleList', async ctx => {
   }
   if (search) {
     $match.$or = [
-      {
-        title: {$regex: search}
-      },
-      {
-        content: {$regex: search}
-      },
-      {
-        keyword: {$regex: search}
-      }
+      {title: {$regex: search}}, {content: {$regex: search}}, {keyword: {$regex: search}}
     ]
+  }
+
+  let total
+  const totalResult = await Article.aggregate([
+    {
+      $match
+    },
+    {
+      $group: {_id: null, total: {$sum: 1}}
+    }
+  ])
+  if (totalResult.length) {
+    total = totalResult[0].total
+
   }
 
   const article = await Article.aggregate([
@@ -48,8 +58,8 @@ router.get('/getArticleList', async ctx => {
     },
     {
       $project: {
+        count: 1,
         title: 1,
-        content: 1,
         author: 1,
         thumbnail: 1,
         description: 1,
@@ -62,20 +72,146 @@ router.get('/getArticleList', async ctx => {
       }
     },
     {
+      $unwind: {path: '$category', preserveNullAndEmptyArrays: true}
+    },
+    {
       $sort: {[sortName]: parseInt(sort)}
     },
     {
       $skip: (page - 1) * limit
     },
     {
-      $limit: limit
+      $limit: parseInt(limit)
     }
   ])
-
+  if (article.length) {
+    ctx.body = {
+      code: 0,
+      message: 'success',
+      count: article.length,
+      total,
+      data: article
+    }
+    return
+  }
   ctx.body = {
-    code: 0,
-    message: 'success',
-    data: article
+    code: -1,
+    message: '文章列表为空',
+    count: 0,
+    total: 0
+  }
+})
+
+// 获取文章详情
+router.get('/getDetail', async ctx => {
+  const {id} = ctx.query
+  if (id) {
+    try {
+      const detail = await Article.aggregate([
+        {
+          $match: {_id: ObjectId(id)}
+        },
+        {
+          $lookup: {
+            from: 'categories',
+            localField: 'category_id',
+            foreignField: '_id',
+            as: 'category'
+          },
+        },
+        {
+          $unwind: {path: '$category', preserveNullAndEmptyArrays: true}
+        },
+        {
+          $project: {
+            title: 1,
+            content: 1,
+            author: 1,
+            thumbnail: 1,
+            description: 1,
+            keyword: 1,
+            importance: 1,
+            updateTime: 1,
+            category: {
+              _id: 1, name: 1, slug: 1, description: 1, thumbnail: 1
+            }
+          }
+        }
+      ])
+      if (detail.length) {
+        ctx.body = {
+          code: 0,
+          message: '文章详情获取成功',
+          data: detail
+        }
+        return
+      }
+      ctx.body = {
+        code: -1,
+        message: '文章详情获取失败，ID不正确'
+      }
+    } catch (e) {
+      ctx.body = {
+        code: 1,
+        message: e.message
+      }
+    }
+  } else {
+    ctx.body = {
+      code: -1,
+      message: '文章ID为空'
+    }
+  }
+})
+
+// 获取随机文章
+router.get('/getRandomArticle', async ctx => {
+  let {limit = 10} = ctx.query
+  limit = parseInt(limit)
+  if (typeof limit !== 'number') {
+    ctx.body = {
+      code: -1,
+      message: 'limit参数必须是数字'
+    }
+    return
+  }
+  if (limit > 10) {
+    limit = 10
+  }
+  try {
+    const list = await Article.aggregate([
+      {
+        $sample: {size: limit}
+      },
+      {
+        $project: {
+          title: 1,
+          author: 1,
+          thumbnail: 1,
+          description: 1,
+          updateTime: 1
+        }
+      }
+    ])
+    if (list.length) {
+      ctx.body = {
+        code: 0,
+        message: '获取随机文章成功',
+        count: list.length,
+        data: list
+      }
+      return
+    }
+    ctx.body = {
+      code: 0,
+      message: '随机文章为空',
+      count: 0
+    }
+  } catch (e) {
+    ctx.body = {
+      code: 1,
+      message: e.message
+    }
   }
 })
 
@@ -121,34 +257,68 @@ router.post('/addArticle', async ctx => {
   }
 })
 
-router.get('/detail', async ctx => {
-  const detail = await Article.aggregate([
-    {
-      $lookup: {
-        from: 'categories',
-        localField: 'category_id',
-        foreignField: '_id',
-        as: 'category'
-      },
-    },
-    {
-      $project: {
-        title: 1, content: 1, updateTime: 1, category: {
-          _id: 1, name: 1, slug: 1, description: 1, thumbnail: 1
-        }
+// 修改文章
+router.post('/updateArticle', async ctx => {
+  const articleData = ctx.request.body
+  const result = await Article.updateOne({_id: articleData._id}, articleData)
+  if (result.ok) {
+    ctx.body = {
+      code: 0,
+      message: '修改文章成功'
+    }
+    return
+  }
+  ctx.body = {
+    code: 1,
+    message: '修改文章失败'
+  }
+})
+
+// 删除文章
+router.post('/deleteArticle', async ctx => {
+  const {id} = ctx.request.body
+  if (id) {
+    const result = await Article.deleteOne({_id: id})
+    if (result.ok) {
+      ctx.body = {
+        code: 0,
+        message: '删除文章成功'
       }
-    },
-    {
-      $sort: {
-        updateTime: -1
+    } else {
+      ctx.body = {
+        code: 1,
+        message: '删除文章失败'
       }
     }
-  ])
+  } else {
+    ctx.body = {
+      code: -1,
+      message: '文章ID为空'
+    }
+  }
+})
 
-  ctx.body = {
-    code: 0,
-    message: 'success',
-    data: detail
+//  批量删除文章
+router.post('/deleteArticleList', async ctx => {
+  const {list} = ctx.request.body
+  if (list.length) {
+    const result = await Article.deleteMany({_id: {$in: list}})
+    if (result.ok) {
+      ctx.body = {
+        code: 0,
+        message: '批量删除文章成功'
+      }
+    } else {
+      ctx.body = {
+        code: 1,
+        message: '批量删除文章失败'
+      }
+    }
+  } else {
+    ctx.body = {
+      code: -1,
+      message: '提交删除列表为空'
+    }
   }
 })
 
