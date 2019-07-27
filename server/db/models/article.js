@@ -32,4 +32,4 @@ const ArticleSchema = new Schema({
   }
 }, {timestamps: {createdAt: 'createTime', updatedAt: 'updateTime'}})
 
-export default mongoose.model('Article', ArticleSchema)
+export default mongoose.model('Article', ArticleSchema, 'article')

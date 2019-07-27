@@ -1,8 +1,10 @@
 import Router from 'koa-router'
 import Category from '../db/models/category'
+import config from '../../config'
+import {verifyToken} from "../utils"
 
 const router = new Router({
-  prefix: '/category'
+  prefix: config.basePrefix + '/category'
 })
 
 // 获取分类
@@ -10,13 +12,13 @@ router.get('/getCategory', async ctx => {
   try {
     const result = await Category.find(null, {name: 1, slug: 1, description: 1, thumbnail: 1})
     ctx.body = {
-      code: 0,
+      code: config.SUCCESS_CODE,
       message: '分类获取成功',
       data: result
     }
   } catch (e) {
     ctx.body = {
-      code: 1,
+      code: config.SYSTEM_ERROR_CODE,
       message: e.message
     }
   }
@@ -24,11 +26,15 @@ router.get('/getCategory', async ctx => {
 
 // 添加分类
 router.post('/addCategory', async ctx => {
-  const {name, slug, description, thumbnail} = ctx.request.body
+  let verifyResult = verifyToken(ctx)
+  if (!verifyResult) return
+
+  const categoryData = ctx.request.body
+  const {name, slug} = categoryData
 
   if (!name) {
     ctx.body = {
-      code: -1,
+      code: config.INFO_ERROR_CODE,
       message: '分类名为空'
     }
     return
@@ -36,7 +42,7 @@ router.post('/addCategory', async ctx => {
 
   if (!slug) {
     ctx.body = {
-      code: -1,
+      code: config.INFO_ERROR_CODE,
       message: '分类别名为空'
     }
     return
@@ -44,7 +50,7 @@ router.post('/addCategory', async ctx => {
 
   if (await Category.findOne({name})) {
     ctx.body = {
-      code: -1,
+      code: config.INFO_ERROR_CODE,
       message: '分类名已存在'
     }
     return
@@ -52,22 +58,96 @@ router.post('/addCategory', async ctx => {
 
   if (await Category.findOne({slug})) {
     ctx.body = {
-      code: -1,
+      code: config.INFO_ERROR_CODE,
       message: '别名已存在'
     }
     return
   }
   try {
-    await new Category({name, slug, description, thumbnail}).save()
+    await new Category(categoryData).save()
 
     ctx.body = {
-      code: 0,
+      code: config.SUCCESS_CODE,
       message: '分类添加成功'
     }
   } catch (e) {
     ctx.body = {
-      code: 1,
+      code: config.SYSTEM_ERROR_CODE,
       message: e.message
+    }
+  }
+})
+
+//修改分类
+router.post('/updateCategory', async ctx => {
+  let verifyResult = verifyToken(ctx)
+  if (!verifyResult) return
+
+  const categoryData = ctx.request.body
+  const _id = categoryData.id
+  const {name, slug} = categoryData
+  if (_id) {
+    if (!name) {
+      ctx.body = {
+        code: config.INFO_ERROR_CODE,
+        message: '分类名为空'
+      }
+      return
+    }
+    if (!slug) {
+      ctx.body = {
+        code: config.INFO_ERROR_CODE,
+        message: '分类别名为空'
+      }
+      return
+    }
+
+    const hasName = await Category.findOne({name})
+    if (hasName) {
+      // 分类名已存在的id不是当前id
+      if (hasName._id.toString() !== _id) {
+        ctx.body = {
+          code: config.INFO_ERROR_CODE,
+          message: '分类名已存在'
+        }
+        return
+      }
+    }
+    const hasSlug = await Category.findOne({slug})
+    if (hasSlug) {
+      // 分类别名已存在的id不是当前id
+      if (hasSlug._id.toString() !== _id) {
+        ctx.body = {
+          code: config.INFO_ERROR_CODE,
+          message: '别名已存在'
+        }
+        return
+      }
+    }
+
+    try {
+      const result = await Category.updateOne({_id}, categoryData)
+      if (result.ok) {
+        ctx.body = {
+          code: config.SUCCESS_CODE,
+          message: '修改分类成功'
+        }
+      } else {
+        ctx.body = {
+          code: config.SYSTEM_ERROR_CODE,
+          message: '修改分类失败'
+        }
+      }
+    } catch (e) {
+      ctx.body = {
+        code: config.SYSTEM_ERROR_CODE,
+        message: e.message
+      }
+    }
+  } else {
+    ctx.body = {
+      code: config.INFO_ERROR_CODE,
+      message: '分类id为空'
     }
   }
 })
@@ -77,13 +157,13 @@ router.get('/hasCategoryName', async ctx => {
   const {name} = ctx.query
   if (name && await Category.findOne({name})) {
     ctx.body = {
-      code: -1,
+      code: config.INFO_ERROR_CODE,
       message: '分类名已存在'
     }
     return
   }
   ctx.body = {
-    code: 0,
+    code: config.SUCCESS_CODE,
     message: '分类名不存在'
   }
 })
@@ -93,13 +173,13 @@ router.get('/hasCategorySlug', async ctx => {
   const {slug} = ctx.query
   if (slug && await Category.findOne({slug})) {
     ctx.body = {
-      code: -1,
+      code: config.INFO_ERROR_CODE,
       message: '分类别名已存在'
     }
     return
   }
   ctx.body = {
-    code: 0,
+    code: config.SUCCESS_CODE,
     message: '分类别名不存在'
   }
 })

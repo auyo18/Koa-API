@@ -6,6 +6,7 @@ import mongoose from 'mongoose'
 import config from '../config'
 import article from './interface/article'
 import category from './interface/category'
+import user from './interface/user'
 
 const app = new Koa()
 
@@ -16,12 +17,23 @@ app.use(bodyParser({
 }))
 app.use(article.routes()).use(article.allowedMethods())
 app.use(category.routes()).use(category.allowedMethods())
+app.use(user.routes()).use(user.allowedMethods())
 
 app.use(ctx => {
   ctx.body = {
-    code: 0,
-    message: 'success',
-    data: 'julipay api'
+    name: 'julipay',
+    author: 'JaMie',
+    WeChat: 'luomo621798',
+    qq: '674157529',
+    site: 'https://www.julipay.com',
+    powered: [
+      'React',
+      'Vue',
+      'Koa',
+      'Node.js',
+      'MongoDB',
+      'Nginx'
+    ]
   }
 })
 console.time('数据库连接时间')
