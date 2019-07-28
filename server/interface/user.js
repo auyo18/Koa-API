@@ -3,7 +3,7 @@ import bcrypt from 'bcrypt'
 import jwt from 'jsonwebtoken'
 import User from '../db/models/user'
 import config from '../../config'
-import {verifyToken} from "../utils"
+import {verifyToken} from '../utils'
 
 const router = new Router({
   prefix: config.basePrefix + '/user'
@@ -115,8 +115,24 @@ router.post('/login', async ctx => {
 
 // 用户登录状态
 router.post('/isLoggedIn', async ctx => {
-  let verifyResult = verifyToken(ctx)
+  const token = ctx.request.body.token
+  let verifyResult = verifyToken(ctx, token)
   if (!verifyResult) return
+  let userInfo = await User.findOne({username: verifyResult.username})
+  if (!userInfo.isEnable) {
+    ctx.body = {
+      code: 50014,
+      message: '账号已禁用'
+    }
+    return
+  }
+  verifyResult.roles = userInfo.roles
+  verifyResult.avatar = userInfo.avatar
+  verifyResult.username = userInfo.username
+  verifyResult.introduction = userInfo.introduction
+  verifyResult.isEnable = userInfo.isEnable
+  verifyResult.loginCount = userInfo.loginCount
+  verifyResult.loginTime = userInfo.loginTime
   ctx.body = {
     code: 0,
     message: 'ok',

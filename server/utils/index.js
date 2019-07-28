@@ -1,12 +1,12 @@
 import jwt from 'jsonwebtoken'
 import config from '../../config'
 
-export function verifyToken(ctx) {
-  const token = ctx.request.header.token
+export function verifyToken(ctx, token) {
+  token = token || ctx.request.header.token
   let userInfo = {}, permission = true
   if (!token) {
     ctx.body = {
-      code: config.SYSTEM_ERROR_CODE,
+      code: 50008,
       message: '没有权限'
     }
     return false
@@ -15,13 +15,13 @@ export function verifyToken(ctx) {
     if (err) {
       if (err.name === 'TokenExpiredError') {
         ctx.body = {
-          code: config.INFO_ERROR_CODE,
+          code: 50014,
           message: '登录状态过期'
         }
         permission = false
       } else {
         ctx.body = {
-          code: config.SYSTEM_ERROR_CODE,
+          code: 50008,
           message: '没有权限'
         }
         permission = false

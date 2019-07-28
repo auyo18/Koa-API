@@ -35,7 +35,8 @@ router.post('/addCategory', async ctx => {
   if (!name) {
     ctx.body = {
       code: config.INFO_ERROR_CODE,
-      message: '分类名为空'
+      message: '分类名为空',
+      token: verifyResult.token
     }
     return
   }
@@ -43,7 +44,8 @@ router.post('/addCategory', async ctx => {
   if (!slug) {
     ctx.body = {
       code: config.INFO_ERROR_CODE,
-      message: '分类别名为空'
+      message: '分类别名为空',
+      token: verifyResult.token
     }
     return
   }
@@ -51,7 +53,8 @@ router.post('/addCategory', async ctx => {
   if (await Category.findOne({name})) {
     ctx.body = {
       code: config.INFO_ERROR_CODE,
-      message: '分类名已存在'
+      message: '分类名已存在',
+      token: verifyResult.token
     }
     return
   }
@@ -59,7 +62,8 @@ router.post('/addCategory', async ctx => {
   if (await Category.findOne({slug})) {
     ctx.body = {
       code: config.INFO_ERROR_CODE,
-      message: '别名已存在'
+      message: '别名已存在',
+      token: verifyResult.token
     }
     return
   }
@@ -68,7 +72,8 @@ router.post('/addCategory', async ctx => {
 
     ctx.body = {
       code: config.SUCCESS_CODE,
-      message: '分类添加成功'
+      message: '分类添加成功',
+      token: verifyResult.token
     }
   } catch (e) {
     ctx.body = {
@@ -90,14 +95,16 @@ router.post('/updateCategory', async ctx => {
     if (!name) {
       ctx.body = {
         code: config.INFO_ERROR_CODE,
-        message: '分类名为空'
+        message: '分类名为空',
+        token: verifyResult.token
       }
       return
     }
     if (!slug) {
       ctx.body = {
         code: config.INFO_ERROR_CODE,
-        message: '分类别名为空'
+        message: '分类别名为空',
+        token: verifyResult.token
       }
       return
     }
@@ -108,7 +115,8 @@ router.post('/updateCategory', async ctx => {
       if (hasName._id.toString() !== _id) {
         ctx.body = {
           code: config.INFO_ERROR_CODE,
-          message: '分类名已存在'
+          message: '分类名已存在',
+          token: verifyResult.token
         }
         return
       }
@@ -119,7 +127,8 @@ router.post('/updateCategory', async ctx => {
       if (hasSlug._id.toString() !== _id) {
         ctx.body = {
           code: config.INFO_ERROR_CODE,
-          message: '别名已存在'
+          message: '别名已存在',
+          token: verifyResult.token
         }
         return
       }
@@ -130,24 +139,28 @@ router.post('/updateCategory', async ctx => {
       if (result.ok) {
         ctx.body = {
           code: config.SUCCESS_CODE,
-          message: '修改分类成功'
+          message: '修改分类成功',
+          token: verifyResult.token
         }
       } else {
         ctx.body = {
           code: config.SYSTEM_ERROR_CODE,
-          message: '修改分类失败'
+          message: '修改分类失败',
+          token: verifyResult.token
         }
       }
     } catch (e) {
       ctx.body = {
         code: config.SYSTEM_ERROR_CODE,
-        message: e.message
+        message: e.message,
+        token: verifyResult.token
       }
     }
   } else {
     ctx.body = {
       code: config.INFO_ERROR_CODE,
-      message: '分类id为空'
+      message: '分类id为空',
+      token: verifyResult.token
     }
   }
 })
@@ -158,13 +171,15 @@ router.get('/hasCategoryName', async ctx => {
   if (name && await Category.findOne({name})) {
     ctx.body = {
       code: config.INFO_ERROR_CODE,
-      message: '分类名已存在'
+      message: '分类名已存在',
+      token: verifyResult.token
     }
     return
   }
   ctx.body = {
     code: config.SUCCESS_CODE,
-    message: '分类名不存在'
+    message: '分类名不存在',
+    token: verifyResult.token
   }
 })
 
@@ -174,13 +189,15 @@ router.get('/hasCategorySlug', async ctx => {
   if (slug && await Category.findOne({slug})) {
     ctx.body = {
       code: config.INFO_ERROR_CODE,
-      message: '分类别名已存在'
+      message: '分类别名已存在',
+      token: verifyResult.token
     }
     return
   }
   ctx.body = {
     code: config.SUCCESS_CODE,
-    message: '分类别名不存在'
+    message: '分类别名不存在',
+    token: verifyResult.token
   }
 })
 

@@ -226,7 +226,8 @@ router.post('/addArticle', async ctx => {
   if (!category_id) {
     ctx.body = {
       code: config.INFO_ERROR_CODE,
-      message: '分类为空'
+      message: '分类为空',
+      token: verifyResult.token
     }
     return
   }
@@ -234,14 +235,16 @@ router.post('/addArticle', async ctx => {
   if (!title) {
     ctx.body = {
       code: config.INFO_ERROR_CODE,
-      message: '标题为空'
+      message: '标题为空',
+      token: verifyResult.token
     }
     return
   } else {
     if (await Article.findOne({title})) {
       ctx.body = {
         code: config.INFO_ERROR_CODE,
-        message: '标题已存在'
+        message: '标题已存在',
+        token: verifyResult.token
       }
       return
     }
@@ -251,12 +254,14 @@ router.post('/addArticle', async ctx => {
     await new Article({title, content, category_id, author, thumbnail, description, keyword, importance}).save()
     ctx.body = {
       code: config.SUCCESS_CODE,
-      message: '文章添加成功'
+      message: '文章添加成功',
+      token: verifyResult.token
     }
   } catch (e) {
     ctx.body = {
       code: config.SYSTEM_ERROR_CODE,
-      message: e.message
+      message: e.message,
+      token: verifyResult.token
     }
   }
 })
@@ -272,18 +277,21 @@ router.post('/updateArticle', async ctx => {
     if (result.ok) {
       ctx.body = {
         code: config.SUCCESS_CODE,
-        message: '修改文章成功'
+        message: '修改文章成功',
+        token: verifyResult.token
       }
       return
     }
     ctx.body = {
       code: config.SYSTEM_ERROR_CODE,
-      message: '修改文章失败'
+      message: '修改文章失败',
+      token: verifyResult.token
     }
   } else {
     ctx.body = {
       code: config.INFO_ERROR_CODE,
-      message: '文章ID为空'
+      message: '文章ID为空',
+      token: verifyResult.token
     }
   }
 })
@@ -298,18 +306,21 @@ router.post('/deleteArticle', async ctx => {
     if (result.ok) {
       ctx.body = {
         code: config.SUCCESS_CODE,
-        message: '删除文章成功'
+        message: '删除文章成功',
+        token: verifyResult.token
       }
     } else {
       ctx.body = {
         code: config.SYSTEM_ERROR_CODE,
-        message: '删除文章失败'
+        message: '删除文章失败',
+        token: verifyResult.token
       }
     }
   } else {
     ctx.body = {
       code: config.INFO_ERROR_CODE,
-      message: '文章ID为空'
+      message: '文章ID为空',
+      token: verifyResult.token
     }
   }
 })
@@ -324,18 +335,21 @@ router.post('/deleteArticleList', async ctx => {
     if (result.ok) {
       ctx.body = {
         code: config.SUCCESS_CODE,
-        message: '批量删除文章成功'
+        message: '批量删除文章成功',
+        token: verifyResult.token
       }
     } else {
       ctx.body = {
         code: config.SYSTEM_ERROR_CODE,
-        message: '批量删除文章失败'
+        message: '批量删除文章失败',
+        token: verifyResult.token
       }
     }
   } else {
     ctx.body = {
       code: config.INFO_ERROR_CODE,
-      message: '提交删除列表为空'
+      message: '提交删除列表为空',
+      token: verifyResult.token
     }
   }
 })
