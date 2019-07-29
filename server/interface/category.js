@@ -1,7 +1,11 @@
 import Router from 'koa-router'
+import mongoose from 'mongoose'
 import Category from '../db/models/category'
+import Article from "../db/models/article"
 import config from '../../config'
 import {verifyToken} from "../utils"
+
+const ObjectId = mongoose.Types.ObjectId
 
 const router = new Router({
   prefix: config.basePrefix + '/category'
@@ -89,7 +93,7 @@ router.post('/updateCategory', async ctx => {
   if (!verifyResult) return
 
   const categoryData = ctx.request.body
-  const _id = categoryData.id
+  const _id = categoryData._id
   const {name, slug} = categoryData
   if (_id) {
     if (!name) {
@@ -136,7 +140,7 @@ router.post('/updateCategory', async ctx => {
 
     try {
       const result = await Category.updateOne({_id}, categoryData)
-      if (result.ok) {
+      if (result.ok && result.n) {
         ctx.body = {
           code: config.SUCCESS_CODE,
           message: '修改分类成功',
@@ -160,6 +164,50 @@ router.post('/updateCategory', async ctx => {
     ctx.body = {
       code: config.INFO_ERROR_CODE,
       message: '分类id为空',
+      token: verifyResult.token
+    }
+  }
+})
+
+// 删除分类
+router.post('/deleteCategory', async ctx => {
+  let verifyResult = verifyToken(ctx)
+  if (!verifyResult) return
+
+  const {_id} = ctx.request.body
+  if (_id) {
+    const totalResult = await Article.aggregate([
+      {
+        $match: {category_id: ObjectId(_id)}
+      }
+    ])
+
+    if (totalResult.length) {
+      ctx.body = {
+        code: config.INFO_ERROR_CODE,
+        message: '不能删除存在文章的分类',
+        token: verifyResult.token
+      }
+    } else {
+      const result = await Category.deleteOne({_id})
+      if (result.ok && result.n) {
+        ctx.body = {
+          code: config.SUCCESS_CODE,
+          message: '删除分类成功',
+          token: verifyResult.token
+        }
+      } else {
+        ctx.body = {
+          code: config.SYSTEM_ERROR_CODE,
+          message: '删除分类失败',
+          token: verifyResult.token
+        }
+      }
+    }
+  } else {
+    ctx.body = {
+      code: config.INFO_ERROR_CODE,
+      message: '分类ID为空',
       token: verifyResult.token
     }
   }

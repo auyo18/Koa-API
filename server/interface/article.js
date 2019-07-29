@@ -14,7 +14,8 @@ const router = new Router({
 router.get('/getArticleList', async ctx => {
   let {page = 1, limit = 10, sort = -1, importance, category_id, sortName = 'updateTime', keyword, search} = ctx.query
   if (limit > 10) {
-    limit = 10
+    let verifyResult = verifyToken(ctx)
+    if (!verifyResult) limit = 10
   }
   let $match = {}
   if (importance) {
@@ -96,21 +97,22 @@ router.get('/getArticleList', async ctx => {
     return
   }
   ctx.body = {
-    code: config.INFO_ERROR_CODE,
+    code: config.SUCCESS_CODE,
     message: '文章列表为空',
     count: 0,
-    total: 0
+    total: 0,
+    data: []
   }
 })
 
 // 获取文章详情
 router.get('/getDetail', async ctx => {
-  const {id} = ctx.query
-  if (id) {
+  const {_id} = ctx.query
+  if (_id) {
     try {
       const detail = await Article.aggregate([
         {
-          $match: {_id: ObjectId(id)}
+          $match: {_id: ObjectId(_id)}
         },
         {
           $lookup: {
@@ -133,6 +135,7 @@ router.get('/getDetail', async ctx => {
             keyword: 1,
             importance: 1,
             updateTime: 1,
+            category_id: 1,
             category: {
               _id: 1, name: 1, slug: 1, description: 1, thumbnail: 1
             }
@@ -143,7 +146,7 @@ router.get('/getDetail', async ctx => {
         ctx.body = {
           code: config.SUCCESS_CODE,
           message: '文章详情获取成功',
-          data: detail
+          data: detail[0]
         }
         return
       }
@@ -271,10 +274,10 @@ router.post('/updateArticle', async ctx => {
   const articleData = ctx.request.body
   let verifyResult = verifyToken(ctx)
   if (!verifyResult) return
-  const _id = articleData.id
+  const _id = articleData._id
   if (_id) {
     const result = await Article.updateOne({_id}, articleData)
-    if (result.ok) {
+    if (result.ok && result.n) {
       ctx.body = {
         code: config.SUCCESS_CODE,
         message: '修改文章成功',
@@ -300,10 +303,10 @@ router.post('/updateArticle', async ctx => {
 router.post('/deleteArticle', async ctx => {
   let verifyResult = verifyToken(ctx)
   if (!verifyResult) return
-  const {id} = ctx.request.body
-  if (id) {
-    const result = await Article.deleteOne({_id: id})
-    if (result.ok) {
+  const {_id} = ctx.request.body
+  if (_id) {
+    const result = await Article.deleteOne({_id})
+    if (result.ok && result.n) {
       ctx.body = {
         code: config.SUCCESS_CODE,
         message: '删除文章成功',
@@ -330,9 +333,9 @@ router.post('/deleteArticleList', async ctx => {
   let verifyResult = verifyToken(ctx)
   if (!verifyResult) return
   const {list} = ctx.request.body
-  if (list.length) {
+  if (list && list.length) {
     const result = await Article.deleteMany({_id: {$in: list}})
-    if (result.ok) {
+    if (result.ok && result.n) {
       ctx.body = {
         code: config.SUCCESS_CODE,
         message: '批量删除文章成功',

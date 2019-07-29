@@ -29,11 +29,12 @@ const UserSchema = new Schema({
   },
   loginCount: {
     type: Number,
-    default: 1
+    default: 0
   },
   isEnable: {
     type: Boolean,
-    require: true
+    require: true,
+    default: true
   }
 }, {timestamps: {createdAt: 'createTime', updatedAt: 'loginTime'}})
 

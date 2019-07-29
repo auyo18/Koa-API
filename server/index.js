@@ -5,6 +5,7 @@ import bodyParser from 'koa-bodyparser'
 import mongoose from 'mongoose'
 import cors from '@koa/cors'
 import config from '../config'
+import site from './interface/site'
 import article from './interface/article'
 import category from './interface/category'
 import user from './interface/user'
@@ -18,6 +19,8 @@ app.use(etag())
 app.use(bodyParser({
   extendTypes: ['json', 'form', 'text']
 }))
+
+app.use(site.routes()).use(site.allowedMethods())
 app.use(article.routes()).use(article.allowedMethods())
 app.use(category.routes()).use(category.allowedMethods())
 app.use(user.routes()).use(user.allowedMethods())

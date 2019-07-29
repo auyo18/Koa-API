@@ -24,7 +24,7 @@ router.get('/qiniuToken', async ctx => {
   const uploadToken = putPolicy.uploadToken(mac)
 
 
-  let guid = (() => S4() + S4() + "-" + S4() + "-" + S4() + "-" + S4() + "-" + S4() + S4() + S4())()
+  let guid = (() => S4() + S4() + '-' + S4() + '-' + S4() + '-' + S4() + '-' + S4() + S4() + S4())()
 
   ctx.body = {
     code: 0,
