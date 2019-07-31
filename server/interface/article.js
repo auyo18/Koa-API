@@ -271,9 +271,9 @@ router.post('/addArticle', async ctx => {
 
 // 修改文章
 router.post('/updateArticle', async ctx => {
-  const articleData = ctx.request.body
   let verifyResult = verifyToken(ctx)
   if (!verifyResult) return
+  const articleData = ctx.request.body
   const _id = articleData._id
   if (_id) {
     const result = await Article.updateOne({_id}, articleData)
@@ -332,6 +332,7 @@ router.post('/deleteArticle', async ctx => {
 router.post('/deleteArticleList', async ctx => {
   let verifyResult = verifyToken(ctx)
   if (!verifyResult) return
+
   const {list} = ctx.request.body
   if (list && list.length) {
     const result = await Article.deleteMany({_id: {$in: list}})

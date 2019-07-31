@@ -4,6 +4,7 @@ import jwt from 'jsonwebtoken'
 import User from '../db/models/user'
 import config from '../../config'
 import {verifyToken} from '../utils'
+import Article from "../db/models/article"
 
 const router = new Router({
   prefix: config.basePrefix + '/user'
@@ -109,6 +110,44 @@ router.post('/login', async ctx => {
     ctx.body = {
       code: config.SYSTEM_ERROR_CODE,
       message: e.message
+    }
+  }
+})
+
+// 用户信息修改
+router.post('/updateUser', async ctx => {
+  let verifyResult = verifyToken(ctx)
+  if (!verifyResult) return
+
+  const userData = ctx.request.body
+  if (userData.username) {
+    ctx.body = {
+      code: config.INFO_ERROR_CODE,
+      message: '不能修改用户名',
+      token: verifyResult.token
+    }
+    return
+  }
+  try {
+    const result = await User.updateOne({username: verifyResult.username}, userData)
+    if (result.ok && result.n) {
+      ctx.body = {
+        code: config.SUCCESS_CODE,
+        message: '修改用户信息成功',
+        token: verifyResult.token
+      }
+      return
+    }
+    ctx.body = {
+      code: config.SYSTEM_ERROR_CODE,
+      message: '修改用户信息失败',
+      token: verifyResult.token
+    }
+  } catch (e) {
+    ctx.body = {
+      code: config.INFO_ERROR_CODE,
+      message: e.message,
+      token: verifyResult.token
     }
   }
 })
