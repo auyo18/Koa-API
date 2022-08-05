@@ -24,7 +24,7 @@
     "koa-conditional-get": "^2.0.0",
     "koa-etag": "^3.0.0",
     "koa-router": "^7.4.0",
-    "mongoose": "^5.6.6",
+    "mongoose": "^5.7.5",
     "nodemon": "^1.19.1",
     "qiniu": "^7.2.2"
   }
